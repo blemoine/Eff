@@ -6,7 +6,7 @@ An Effect System for Scala
 Description
 -----------
 
-Effect System is way to deal with _impure_ code in some kind of _pure_ functional programming way.
+Effect System is a way to deal with _impure_ code in some kind of _pure_ functional programming way.
 
 The core of the Effect System is the `Eff[E, A]` class, which represents an _impure_ code 
 that generate a `A` by using a list `E` of `EFFECT`.
@@ -19,12 +19,6 @@ Because the point of the Effect System is to manage _impure_ computation that wi
  give the same result, we cannot simply get a `A` from an `Eff[E, A]`, 
  we necessarily need to get it wrapped in something (an `IO`  monad for example, or simply an `Option`)
  
-All effects cannot be run with all monads. So each `EFFECT` should be associated with one or many
- `EffectHandler[E, M]` with `E` the `EFFECT` and `M` a (cats) monad.
-
-For example, `EXCEPTION` is an  `EFFECT` indicating that a computation can throw an `Exception`.
- To get the value, we can wrap the result, for instance, in a `Try` monad. So we have to use
-  a `EffectHandler[EXCEPTION, Try]` to get our final result.
   
 Simple example
 --------------
