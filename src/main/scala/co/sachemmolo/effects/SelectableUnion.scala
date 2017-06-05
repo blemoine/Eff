@@ -3,6 +3,17 @@ package co.sachemmolo.effects
 import shapeless._
 import shapeless.ops.hlist.{FilterNot, Remove, SelectAll}
 
+/*
+ * I didn't find a way to prove
+ * ∀ (L, M) if V = L ∪ M => L ⊆ V
+ *
+ *  In term of shapeless, it would mean to have a function with signature:
+ *  def selectFromUnion[L <: HList, M <: HList](u: Union[L, M]): SelectAll[u.Out, L]
+ *
+ *  To circumvent the problem, I build my own specialized version of Union, that gives me the
+ *  select that I need
+ *
+ */
 trait SelectableUnion[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable {
     type Out <: HList
 

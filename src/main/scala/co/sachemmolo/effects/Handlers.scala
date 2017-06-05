@@ -5,7 +5,6 @@ import shapeless.{::, HList, HMap, HNil}
 import shapeless.ops.hlist.SelectAll
 
 import scala.annotation.implicitNotFound
-import shapeless._
 
 trait EffectHandler[E <: EFFECT, M[_]] {
   def effect: E
@@ -19,7 +18,8 @@ trait Handlers[E <: HList, M[_]] {
   def select[F <: HList](select: SelectAll[E, F]): Handlers[F, M] = {
     val self = this
     new Handlers[F, M] {
-      def handlersMap = self.handlersMap
+      //The original Map contains  necessarily all the subValues
+      def handlersMap: HMap[HandlersMapEffect] = self.handlersMap
     }
   }
 }
