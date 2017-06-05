@@ -25,12 +25,11 @@ Simple example
 
 ```tut:silent
 import co.sachemmolo.effects.Eff
-import co.sachemmolo.effects.Handler
 import co.sachemmolo.effects.effects.Rnd._
 import shapeless._
 import cats.implicits._
 
-val tenOrA: Eff[RND :: HNil, String] = rnd { i => 
+val tenOrA: Eff[RND :: HNil, String] = rnd { i =>
   if (i > 0.5) {
     "10"
   } else {
@@ -38,13 +37,13 @@ val tenOrA: Eff[RND :: HNil, String] = rnd { i =>
   }
 }
 
-Handler[Option].handle(tenOrA) // Some("10") or Some("A")
+tenOrA.run[Option](DefaultRnd :: HNil) // Some("10") or Some("A")
 ```
 
 More Advanced example
 ---------------------
 
-```tut:silent
+```scala
 import shapeless._
 import cats.implicits._
 import co.sachemmolo.effects.Eff
@@ -85,7 +84,7 @@ Declaring a new EFFECT
 
 As an example, will we write here a new EFFECT that will manipulate the current time
 
-```tut:silent
+```scala
 import java.time.Instant
 import co.sachemmolo.effects.EFFECT
 import co.sachemmolo.effects.Eff

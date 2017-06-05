@@ -3,7 +3,6 @@ package co.sachemmolo.effects
 import shapeless._
 import shapeless.ops.hlist.{FilterNot, Remove, SelectAll}
 
-
 trait SelectableUnion[L <: HList, M <: HList] extends DepFn2[L, M] with Serializable {
     type Out <: HList
 
@@ -17,6 +16,9 @@ trait SelectableUnion[L <: HList, M <: HList] extends DepFn2[L, M] with Serializ
   }
 
   object SelectableUnion extends LowPriorityUnion {
+
+    implicit def lubToSpecificConstraint[H, L <: HList, B](implicit lub:LUBConstraint[H :: L, B]): H <:< B = ???
+
     def apply[L <: HList, M <: HList](implicit union: SelectableUnion[L, M]): Aux[L, M, union.Out] = union
 
     // let ∅ ∪ M = M
@@ -31,6 +33,8 @@ trait SelectableUnion[L <: HList, M <: HList] extends DepFn2[L, M] with Serializ
         override def selectM: SelectAll[M, M] = new SelectAll[M, M] {
           override def apply(t: M): M = t
         }
+
+//        override def constraint[TC](implicit tcl: LUBConstraint[HNil, TC], tcm: LUBConstraint[M, TC]): LUBConstraint[M, TC] = tcm
       }
 
     // let (H :: T) ∪ M  =  H :: (T ∪ M) when H ∉ M

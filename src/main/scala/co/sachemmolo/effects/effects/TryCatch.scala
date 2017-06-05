@@ -1,16 +1,30 @@
 package co.sachemmolo.effects.effects
 
-import co.sachemmolo.effects.{EFFECT, Eff, OneImpurity}
-import shapeless._
+import cats.Monad
+import co.sachemmolo.effects.Eff.Generator
+import co.sachemmolo.effects.{EFFECT, Eff, EffectHandler}
+import shapeless.{::, HNil}
 
+import scala.util.Try
 
 object TryCatch {
+  implicit object EXCEPTION extends EFFECT {
+    override type R = Nothing
 
-  implicit object EXCEPTION extends EFFECT
+    override def resources: R = throw new Exception("No resource")
+  }
 
   type EXCEPTION = EXCEPTION.type
+  def apply[A](fn: => A): Eff[EXCEPTION :: HNil, A] = Eff(new Generator[EXCEPTION, A] {
+    override def apply[M[_] : Monad](e: EXCEPTION, handle: EffectHandler[EXCEPTION, M]): M[A] = handle.pure(fn)
+  })
 
-  def tryCatch[A](fn: => A): Eff[EXCEPTION :: HNil, A] = OneImpurity((e: EXCEPTION) => fn)
+
+
+  implicit def optionHandler: EffectHandler[EXCEPTION, Option] = new EffectHandler[EXCEPTION, Option] {
+    override def effect: EXCEPTION = EXCEPTION
+
+    override def pure[A](a: => A): Option[A] = Try(a).toOption
+  }
 
 }
-
