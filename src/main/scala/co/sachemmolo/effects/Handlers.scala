@@ -1,5 +1,6 @@
 package co.sachemmolo.effects
 
+import cats.Monad
 import co.sachemmolo.effects.Handlers.HandlersMapEffect
 import shapeless.{::, HList, HMap, HNil}
 import shapeless.ops.hlist.SelectAll
@@ -10,6 +11,17 @@ trait EffectHandler[E <: EFFECT, M[_]] {
   def effect: E
 
   def pure[A](a: => A): M[A]
+}
+object EffectHandler {
+  def fromMonad[E <: EFFECT, M[_]: Monad](implicit e:E): EffectHandler[E, M] = new EffectHandler[E, M] {
+    override def effect: E = e
+
+    override def pure[A](a: => A): M[A] = implicitly[Monad[M]].pure(a)
+  }
+
+  abstract class WithDefaultEffect[E <: EFFECT, M[_]](implicit e:E) extends EffectHandler[E, M] {
+    override def effect: E = e
+  }
 }
 
 trait Handlers[E <: HList, M[_]] {

@@ -1,7 +1,6 @@
 package co.sachemmolo.effects.effects
 
-import cats.Monad
-import co.sachemmolo.effects.Eff.Generator
+import cats.implicits._
 import co.sachemmolo.effects.{EFFECT, Eff, EffectHandler}
 import shapeless.{::, HNil}
 
@@ -18,9 +17,5 @@ object Console {
   def withConsole[A]( fn: scala.Console.type => A):Eff[CONSOLE :: HNil, A] = Eff[CONSOLE, A](fn)
 
   @implicitNotFound("Could not find default effect for Console")
-  implicit def consoleHandler(implicit console:CONSOLE):EffectHandler[CONSOLE, Option] = new EffectHandler[CONSOLE, Option] {
-    override def effect: CONSOLE = console
-
-    override def pure[A](a: => A): Option[A] = Some(a)
-  }
+  implicit def consoleHandler(implicit console:CONSOLE):EffectHandler[CONSOLE, Option] = EffectHandler.fromMonad[CONSOLE, Option]
 }
