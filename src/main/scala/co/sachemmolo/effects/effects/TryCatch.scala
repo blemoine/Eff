@@ -15,11 +15,7 @@ object TryCatch {
   }
 
   type EXCEPTION = EXCEPTION.type
-  def apply[A](fn: => A): Eff[EXCEPTION :: HNil, A] = Eff(new Generator[EXCEPTION, A] {
-    override def apply[M[_] : Monad](e: EXCEPTION, handle: EffectHandler[EXCEPTION, M]): M[A] = handle.pure(fn)
-  })
-
-
+  def apply[A](fn: => A): Eff[EXCEPTION :: HNil, A] = Eff[EXCEPTION, A]((_:EXCEPTION#R) => fn)
 
   implicit def optionHandler: EffectHandler[EXCEPTION, Option] = new EffectHandler[EXCEPTION, Option] {
     override def effect: EXCEPTION = EXCEPTION
