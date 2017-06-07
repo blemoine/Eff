@@ -1,12 +1,15 @@
 package co.sachemmolo.effects
 
-import cats.Monad
+import cats.{Id, Monad}
 import shapeless.{::, HList, HNil}
+
 import scala.reflect.ClassTag
 
 
 trait EFFECT {
   type R
+
+  type DefaultMonad[_]
 
   def resources: R
 }
@@ -35,12 +38,12 @@ object Eff {
     }
   }
   object Generator {
-    def apply[E <: EFFECT, A](fn: E#R => A): Generator[E, A] = new Generator[E, A] {
+    def apply[E <: EFFECT, A](fn: E#R => E#DefaultMonad[A]): Generator[E, A] = new Generator[E, A] {
       override def apply[M[_] : Monad](e: E, handle: EffectHandler[E, M]): M[A] = handle.pure(fn(e.resources))
     }
   }
 
-  def apply[E <: EFFECT : ClassTag, A](fn: E#R => A): Eff[E :: HNil, A] = nearPure(Generator[E, A](fn))
+  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultMonad[A]): Eff[E :: HNil, A] = nearPure(Generator[E, A](fn))
 
   def apply[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = nearPure(gen)
 

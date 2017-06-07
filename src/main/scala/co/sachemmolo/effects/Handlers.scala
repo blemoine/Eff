@@ -1,6 +1,7 @@
 package co.sachemmolo.effects
 
-import cats.Monad
+import cats.arrow.FunctionK
+import cats.{Id, Monad, ~>}
 import co.sachemmolo.effects.Handlers.HandlersMapEffect
 import shapeless.{::, HList, HMap, HNil}
 import shapeless.ops.hlist.SelectAll
@@ -11,11 +12,18 @@ import scala.reflect.ClassTag
 abstract class EffectHandler[E <: EFFECT : ClassTag, M[_]] {
   def effect: ClassTag[E] = implicitly[ClassTag[E]]
 
-  def pure[A](a: => A): M[A]
+  def pure[A](a: => E#DefaultMonad[A]): M[A]
 }
 object EffectHandler {
-  def fromMonad[E <: EFFECT : ClassTag, M[_]: Monad]: EffectHandler[E, M] = new EffectHandler[E, M] {
-    override def pure[A](a: => A): M[A] = implicitly[Monad[M]].pure(a)
+  implicit def IdToOption: Id ~> Option = new FunctionK[Id, Option] {
+    override def apply[A](fa: Id[A]): Option[A] = Some(fa)
+  }
+
+  def fromMonad[E <: EFFECT : ClassTag, M[_]: Monad](implicit naturalTransfo:E#DefaultMonad ~> M): EffectHandler[E, M] = new EffectHandler[E, M] {
+    override def pure[A](a: => E#DefaultMonad[A]): M[A] = {
+      val m = implicitly[Monad[M]]
+      m.flatten(m.pure(naturalTransfo(a)))
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 package co.sachemmolo.effects.effects
 
+import cats.Id
 import co.sachemmolo.effects.{EFFECT, Eff, EffectHandler}
 import shapeless.{::, HNil}
 
@@ -8,6 +9,7 @@ import scala.util.Try
 object TryCatch {
   implicit object EXCEPTION extends EFFECT {
     override type R = Nothing
+    override type DefaultMonad[X] = Id[X]
 
     override def resources: R = throw new Exception("No resource")
   }
