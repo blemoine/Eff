@@ -6,21 +6,16 @@ import shapeless.{::, HList, HMap, HNil}
 import shapeless.ops.hlist.SelectAll
 
 import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 
-trait EffectHandler[E <: EFFECT, M[_]] {
-  def effect: E
+abstract class EffectHandler[E <: EFFECT : ClassTag, M[_]] {
+  def effect: ClassTag[E] = implicitly[ClassTag[E]]
 
   def pure[A](a: => A): M[A]
 }
 object EffectHandler {
-  def fromMonad[E <: EFFECT, M[_]: Monad](implicit e:E): EffectHandler[E, M] = new EffectHandler[E, M] {
-    override def effect: E = e
-
+  def fromMonad[E <: EFFECT : ClassTag, M[_]: Monad]: EffectHandler[E, M] = new EffectHandler[E, M] {
     override def pure[A](a: => A): M[A] = implicitly[Monad[M]].pure(a)
-  }
-
-  abstract class WithDefaultEffect[E <: EFFECT, M[_]](implicit e:E) extends EffectHandler[E, M] {
-    override def effect: E = e
   }
 }
 
@@ -40,7 +35,7 @@ object Handlers {
 
   class HandlersMapEffect[K, V]
 
-  implicit def eh[E <: EFFECT, M[_]] = new HandlersMapEffect[E, EffectHandler[E, M]]
+  implicit def eh[E <: EFFECT, M[_]] = new HandlersMapEffect[ClassTag[E], EffectHandler[E, M]]
 
 
   implicit def HnilHandlers[M[_]]: Handlers[HNil, M] = new Handlers[HNil, M] {

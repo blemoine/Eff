@@ -27,7 +27,7 @@ object Main {
   def x = tenOrA.run[Option](DefaultRnd :: HNil)
 
 
-/*
+
   def parse(str: String): Eff[EXCEPTION :: HNil, Int] = {
     TryCatch[Int](str.toInt)
   }
@@ -44,5 +44,5 @@ object Main {
   } yield result
 
   def y  = sumRnd.run[Option](DefaultRnd :: Console.DefaultConsole :: EXCEPTION :: HNil)
-  */
+
 }

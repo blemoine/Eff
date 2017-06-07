@@ -2,6 +2,7 @@ package co.sachemmolo.effects
 
 import cats.Monad
 import shapeless.{::, HList, HNil}
+import scala.reflect.ClassTag
 
 
 trait EFFECT {
@@ -39,15 +40,15 @@ object Eff {
     }
   }
 
-  def apply[E <: EFFECT, A](fn: E#R => A): Eff[E :: HNil, A] = nearPure(Generator[E, A](fn))
+  def apply[E <: EFFECT : ClassTag, A](fn: E#R => A): Eff[E :: HNil, A] = nearPure(Generator[E, A](fn))
 
-  def apply[E <: EFFECT, A](gen: Generator[E, A]): Eff[E :: HNil, A] = nearPure(gen)
+  def apply[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = nearPure(gen)
 
-  private[effects] def nearPure[E <: EFFECT, A](gen: Generator[E, A]): Eff[E :: HNil, A] = new Eff[E :: HNil, A] {
+  private[effects] def nearPure[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = new Eff[E :: HNil, A] {
     override def map[B](fn: (A) => B): Eff[E :: HNil, B] = nearPure(gen.map(fn))
 
     override def run[M[_] : Monad](e: E :: HNil)(implicit handlers: Handlers[E :: HNil, M]): M[A] = {
-      val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(e.head).map(_.asInstanceOf[EffectHandler[E, M]])
+      val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(implicitly[ClassTag[E]]).map(_.asInstanceOf[EffectHandler[E, M]])
       gen.apply(e.head, maybeHandler.getOrElse(throw new Exception("Could not happen")))
     }
   }
