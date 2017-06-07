@@ -37,110 +37,106 @@ val tenOrA: Eff[RND :: HNil, String] = rnd { i =>
   }
 }
 
-tenOrA.run[Option](DefaultRnd :: HNil) // Some("10") or Some("A")
+tenOrA.run[Option] // Some("10") or Some("A")
 ```
 
 More Advanced example
 ---------------------
 
-```scala
-import shapeless._
-import cats.implicits._
-import co.sachemmolo.effects.Eff
-import co.sachemmolo.effects.Handler
-import co.sachemmolo.effects.effects.Rnd._
-import co.sachemmolo.effects.effects.Console._
-import co.sachemmolo.effects.effects.TryCatch._
+```tut:silent
+  import shapeless._
+  import cats.implicits._
+  import co.sachemmolo.effects.Eff
 
-//Parsing a String to Int can throw an Exception
-// that can be represented as an Effect
-def parse(str: String): Eff[EXCEPTION :: HNil, Int] = {
-      TryCatch[Int](str.toInt)
-}
+  import co.sachemmolo.effects.effects.Rnd._
+  import co.sachemmolo.effects.effects.Console._
+  import co.sachemmolo.effects.effects.TryCatch
+  import co.sachemmolo.effects.effects.TryCatch._
 
-// sumRnd will use something random (RND) , can throw an exception (EXCEPTION)
- // and will write or read from the console (CONSOLE)
-val sumRnd: Eff[RND :: CONSOLE :: EXCEPTION :: HNil, Int] = for {
+  //Parsing a String to Int can throw an Exception
+  // that can be represented as an Effect
+  def parse(str: String): Eff[EXCEPTION :: HNil, Int] = {
+    TryCatch[Int](str.toInt)
+  }
+
+  // sumRnd will use something random (RND) , can throw an exception (EXCEPTION)
+  // and will write or read from the console (CONSOLE)
+  val sumRnd: Eff[RND :: CONSOLE :: EXCEPTION :: HNil, Int] = for {
     s1 <- tenOrA
     _ <- withConsole(console => console.println("s1", s1))
     s2 <- tenOrA
     _ <- withConsole(console => console.println("s2", s2))
     result <- parse(s1 + s2)
     _ <- withConsole(console => console.println("result", result))
-} yield result
+  } yield result
 
-//For the moment nothing is printed in the console.
-// The code will be executed only when handled
+  //For the moment nothing is printed in the console.
+  // The code will be executed only when handled
 
-Handler[Option].handle(sumRnd) // return Some("1010") or None
-//Also display in the console (for example) 
-//  (s1,10)
-//  (s2,10)
-//  (result,1010)
+  sumRnd.run[Option] // return Some("1010") or None
+  //Also display in the console (for example)
+  //  (s1,10)
+  //  (s2,10)
+  //  (result,1010)
 ```
+
+Example:
+```tut
+sumRnd.run[Option]
+```
+
+Specifying explicitly a resource for an effect
+----------------------------------------------
+
 
 Declaring a new EFFECT
 ----------------------
 
-As an example, will we write here a new EFFECT that will manipulate the current time
+As an advanced example, will we write here a new EFFECT that will compute asynchronous result
 
-```scala
-import java.time.Instant
-import co.sachemmolo.effects.EFFECT
-import co.sachemmolo.effects.Eff
-import shapeless._
+```tut:silent
+import scala.concurrent.{Future, ExecutionContext}
+import co.sachemmolo.effects.{EFFECT, EffectHandler}
+
+object Async {
+   
+  //Declaring ASYNC as an Effect
+  // Async code is running on various ExecutionContext
+  trait ASYNC extends EFFECT {
+    override type R = ExecutionContext
+    // Async code is by default writtent in a Future
+    override type DefaultMonad[X] = Future[X] 
+  }
+  //By default, the resource for ASYNC is the global ExecutionContext
+  implicit object DefaultAsync extends ASYNC {
+    override def resources: ExecutionContext = ExecutionContext.global
+  }
+
+  // Constructor for the Asynchronous Effect
+  def async[A](fn: ExecutionContext => Future[A]):Eff[ASYNC :: HNil, A] = Eff[ASYNC, A](fn)
+
+  //There is only one Handler for Async code, and it returns a Future
+  implicit def handler: EffectHandler[ASYNC, Future] = new EffectHandler[ASYNC, Future] {
+    override def pure[A](a: => Future[A]): Future[A] = a
+  }
+}
+```
+
+Now we can use it:
+
+```tut:silent
+val z: Eff[Async.ASYNC :: HNil, Int] = for {
+  a <- Async.async(e => Future(2)(e))
+  b <- Async.async(e => Future(3)(e))
+} yield 2 + 3
+
+import Async._
 import cats.implicits._
 
-  //We wrap in an Object our Effect to prevent leaking of implicits  
-  object Time {
-
-    //First we want to declare the TIME EFFECT and it's associated resource
-    trait TIME extends EFFECT {
-      def resource: Instant
-    }
-
-    // Give this EFFECT a default implementation, for example now():
-    implicit object DEFAULT_TIME extends TIME {
-      override def resource: Instant = Instant.now()
-    }
-
-    //Then we can declare the constructor or our Effectful computation:
-
-    // The EFFECT list is an HList, here we declare only one EFFECT, but it's not mandatory
-
-
-    def time[A](fn: Instant => A): Eff[TIME :: HNil, A] = Eff(e => fn(e.head.resource))
-
-    //Finally we have to declare our Handler
-    //Here we write something like "if we have TIME effect, we can get the value in an Option"
-    // But in fact, this cannot fail, so here the EFFECT TIME is only present as an information
-    // of which impure resource the function is using
-    import co.sachemmolo.effects.EffectHandler
-
-    implicit def optionHandler(implicit time: TIME): EffectHandler[TIME, Option] = new EffectHandler[TIME, Option] {
-      override def handle[A, F <: HList](eff: Eff[TIME :: F, A]): Eff[F, Option[A]] = Eff(e => Some(eff.run(time :: e)))
-      override def handlePure[A](eff: Eff[::[TIME, HNil], A]): Option[A] = Some(eff.run(time :: HNil))
-    }
-  }
-
-  //We can now use our new effect
-  import java.time.ZoneOffset
-  import co.sachemmolo.effects.Handler
-  import Time.TIME
-  import Time.time
-
-  val nowAsString: Eff[TIME :: HNil, String] = time(_.atOffset(ZoneOffset.UTC).toString)
-
-  val now1 = Handler[Option].handle(nowAsString) // return the current DateTime as a String
-
-  //but we can also use another resource for this effect
-  object WithEpochTime {
-
-    implicit object FIXED_TIME extends TIME {
-      override def resource: Instant = Instant.ofEpochMilli(0)
-    }
-
-    val now2 = Handler[Option].handle(nowAsString) // return 1st of january 1970 as a String
-  }
+//Future is only a cats Monad IF there is an implicit ExecutionContext in scope
+implicit val ec = DefaultAsync.resources
+z.run[Future](DefaultAsync :: HNil).onComplete { r => 
+  println(r)
+}
 ```
  

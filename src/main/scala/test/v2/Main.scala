@@ -28,27 +28,43 @@ object Main {
 
 
   import cats.implicits._
-  def x = tenOrA.run[Option](DefaultRnd :: HNil)
+  def x = tenOrA.run[Option]
 
+  import shapeless._
+  import cats.implicits._
+  import co.sachemmolo.effects.Eff
 
+  import co.sachemmolo.effects.effects.Rnd._
+  import co.sachemmolo.effects.effects.Console._
+  import co.sachemmolo.effects.effects.TryCatch._
 
+  //Parsing a String to Int can throw an Exception
+  // that can be represented as an Effect
   def parse(str: String): Eff[EXCEPTION :: HNil, Int] = {
     TryCatch[Int](str.toInt)
   }
 
-
-
+  // sumRnd will use something random (RND) , can throw an exception (EXCEPTION)
+  // and will write or read from the console (CONSOLE)
   val sumRnd: Eff[RND :: CONSOLE :: EXCEPTION :: HNil, Int] = for {
     s1 <- tenOrA
-    _ <- Console.withConsole(console => console.println("s1", s1))
+    _ <- withConsole(console => console.println("s1", s1))
     s2 <- tenOrA
-    _ <- Console.withConsole(console => console.println("s2", s2))
+    _ <- withConsole(console => console.println("s2", s2))
     result <- parse(s1 + s2)
-    _ <- Console.withConsole(console => console.println("result", result))
+    _ <- withConsole(console => console.println("result", result))
   } yield result
 
-  def y  = sumRnd.run[Option](DefaultRnd :: Console.DefaultConsole :: EXCEPTION :: HNil)
+  //For the moment nothing is printed in the console.
+  // The code will be executed only when handled
 
+  sumRnd.run[Option] // return Some("1010") or None
+  //Also display in the console (for example)
+  //  (s1,10)
+  //  (s2,10)
+  //  (result,1010)
+
+  /*
   def main(args: Array[String]): Unit = {
     val z: Eff[::[Async.ASYNC, HNil], Int] = for {
       a <- Async.async(e => Future(2)(e))
@@ -63,6 +79,7 @@ object Main {
 
     }
   }
+  */
 
 }
 
@@ -76,9 +93,7 @@ object Async {
     override def resources: ExecutionContext = ExecutionContext.global
   }
 
-  def async[A](fn: ExecutionContext => Future[A]):Eff[ASYNC :: HNil, A] = Eff(new Generator[ASYNC, A] {
-    override def apply[M[_] : Monad](e: ASYNC, handle: EffectHandler[ASYNC, M]): M[A] = handle.pure(fn(e.resources))
-  })
+  def async[A](fn: ExecutionContext => Future[A]):Eff[ASYNC :: HNil, A] = Eff[ASYNC, A](fn)
 
   implicit def handler: EffectHandler[ASYNC, Future] = new EffectHandler[ASYNC, Future] {
     override def pure[A](a: => Future[A]): Future[A] = a

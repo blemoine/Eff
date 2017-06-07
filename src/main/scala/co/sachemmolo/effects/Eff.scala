@@ -14,6 +14,11 @@ trait EFFECT {
   def resources: R
 }
 
+case class Resource[E <: HList](resource:E)
+object Resource {
+  implicit val ResourceHNil:Resource[HNil] = Resource(HNil)
+  implicit def ResourceHCons[E <: EFFECT, F <: HList](implicit e:E, f:Resource[F]):Resource[E :: F] = Resource(e :: f.resource)
+}
 
 sealed trait Eff[E <: HList, A] {
   def map[B](fn: A => B): Eff[E, B]
@@ -21,6 +26,8 @@ sealed trait Eff[E <: HList, A] {
   def flatMap[H <: HList, B](fn: A => Eff[H, B])(implicit selectableUnion: SelectableUnion[E, H]): Eff[selectableUnion.Out, B] = Eff.impure(fn, this)
 
   def run[M[_] : Monad](e: E)(implicit handlers: Handlers[E, M]): M[A]
+
+  def run[M[_] : Monad](implicit e: Resource[E], handlers: Handlers[E, M]): M[A] = run[M](e.resource)
 }
 
 
