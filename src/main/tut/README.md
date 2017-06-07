@@ -25,7 +25,7 @@ Simple example
 
 ```tut:silent
 import co.sachemmolo.effects.Eff
-import co.sachemmolo.effects.effects.Rnd._
+import co.sachemmolo.effects.effects.Rnd.{RND, rnd}
 import shapeless._
 import cats.implicits._
 
@@ -37,7 +37,10 @@ val tenOrA: Eff[RND :: HNil, String] = rnd { i =>
   }
 }
 
-tenOrA.run[Option] // Some("10") or Some("A")
+{
+  import co.sachemmolo.effects.effects.Rnd._
+  tenOrA.run[Option] // Some("10") or Some("A")
+}
 ```
 
 More Advanced example
@@ -48,7 +51,7 @@ More Advanced example
   import cats.implicits._
   import co.sachemmolo.effects.Eff
 
-  import co.sachemmolo.effects.effects.Rnd._
+  import co.sachemmolo.effects.effects.Rnd.{RND, rnd}
   import co.sachemmolo.effects.effects.Console._
   import co.sachemmolo.effects.effects.TryCatch
   import co.sachemmolo.effects.effects.TryCatch._
@@ -72,12 +75,14 @@ More Advanced example
 
   //For the moment nothing is printed in the console.
   // The code will be executed only when handled
-
+  {
+  import co.sachemmolo.effects.effects.Rnd._
   sumRnd.run[Option] // return Some("1010") or None
   //Also display in the console (for example)
   //  (s1,10)
   //  (s2,10)
   //  (result,1010)
+  }
 ```
 
 Example:
@@ -87,6 +92,33 @@ sumRnd.run[Option]
 
 Specifying explicitly a resource for an effect
 ----------------------------------------------
+
+Effect System should let you pass a specified resource, and not only the default one.
+This serves as some kind of dependency injection, and let you test effectful code more easily.
+
+```tut:silent
+object MockedRnd {
+  import co.sachemmolo.effects.effects.Rnd.{RND, rnd}
+  val tenOrA: Eff[RND :: HNil, String] = rnd { i =>
+    if (i > 0.9) {
+      i.toString
+    } else {
+      "A"
+    }
+  }
+
+  import cats.implicits._
+  implicit object MockRnd extends RND {
+    override def resources: Double = 1.0
+  }
+  def x = tenOrA.run[Option] // Will always return Some("1.0")
+}
+```
+
+Example:
+```tut
+MockedRnd.x
+```
 
 
 Declaring a new EFFECT
