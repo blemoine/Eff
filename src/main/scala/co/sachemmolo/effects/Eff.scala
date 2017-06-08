@@ -21,7 +21,7 @@ object Resource {
 }
 
 sealed trait Eff[E <: HList, A] {
-  def map[B](fn: A => B): Eff[E, B]
+  def map[B](fn: A => B): Eff[E, B] = flatMap(a => Eff.pure(fn(a)))(SelectableUnion.hlistUnion2[E])
 
   def flatMap[H <: HList, B](fn: A => Eff[H, B])(implicit selectableUnion: SelectableUnion[E, H]): Eff[selectableUnion.Out, B] = Eff.impure(fn, this)
 
@@ -54,9 +54,12 @@ object Eff {
 
   def apply[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = nearPure(gen)
 
-  private[effects] def nearPure[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = new Eff[E :: HNil, A] {
-    override def map[B](fn: (A) => B): Eff[E :: HNil, B] = nearPure(gen.map(fn))
+  private[effects] def pure[A](a: => A):Eff[HNil, A] = new Eff[HNil, A] {
+    override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = implicitly[Monad[M]].pure(a)
+  }
 
+
+  private[effects] def nearPure[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = new Eff[E :: HNil, A] {
     override def run[M[_] : Monad](e: E :: HNil)(implicit handlers: Handlers[E :: HNil, M]): M[A] = {
       val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(implicitly[ClassTag[E]]).map(_.asInstanceOf[EffectHandler[E, M]])
       gen.apply(e.head, maybeHandler.getOrElse(throw new Exception("Could not happen")))
@@ -64,8 +67,6 @@ object Eff {
   }
 
   private[effects] def impure[F <: HList, A, G <: HList, C](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectableUnion: SelectableUnion[F, G]): Eff[selectableUnion.Out, C] = new Eff[selectableUnion.Out, C] {
-    override def map[B](fn: (C) => B): Eff[selectableUnion.Out, B] = impure((a: A) => gen(a).map(fn), eff)
-
     def run[M[_] : Monad](e: selectableUnion.Out)(implicit handlers: Handlers[selectableUnion.Out, M]): M[C] = {
       implicit val handlersF: Handlers[F, M] = handlers.select(selectableUnion.selectL)
       implicit val handlersG: Handlers[G, M] = handlers.select(selectableUnion.selectM)
