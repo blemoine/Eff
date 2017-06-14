@@ -29,6 +29,8 @@ sealed trait Eff[E <: HList, A] {
   def run[M[_] : Monad](e: E)(implicit handlers: Handlers[E, M]): M[A]
 
   def run[M[_] : Monad](implicit e: Resource[E], handlers: Handlers[E, M]): M[A] = run[M](e.resource)
+
+  //def runOne[M[_] : Monad, U <: EFFECT : ClassTag, H <: HList](e: U)(implicit ev: (U :: H) =:= E, handler: EffectHandler[U, M]): Eff[H, M[A]]
 }
 
 
