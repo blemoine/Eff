@@ -1,6 +1,7 @@
 package co.sachemmolo.effects
 
 import cats.{Id, Monad}
+import shapeless.ops.hlist.SelectAll
 import shapeless.{::, HList, HNil}
 
 import scala.reflect.ClassTag
@@ -23,7 +24,7 @@ object Resource {
 sealed trait Eff[E <: HList, A] {
   def map[B](fn: A => B): Eff[E, B] = flatMap(a => Eff.Pure(() => fn(a)))(SelectableUnion.hlistUnion[E])
 
-  def flatMap[H <: HList, B](fn: A => Eff[H, B])(implicit selectableUnion: SelectableUnion[H, E]): Eff[selectableUnion.Out, B] = Eff.impure(fn, this)
+  def flatMap[H <: HList, B](fn: A => Eff[H, B])(implicit selectableUnion: SelectableUnion[H, E]): Eff[selectableUnion.Out, B] = Eff.Impure[E, A, H, B, selectableUnion.Out](fn, this)(selectableUnion.selectM,selectableUnion.selectL)
 
   def run[M[_] : Monad](e: E)(implicit handlers: Handlers[E, M]): M[A]
 
@@ -64,13 +65,12 @@ object Eff {
       gen.apply(e.head, maybeHandler.getOrElse(throw new Exception("Could not happen")))
     }
   }
-
-  private[effects] def impure[F <: HList, A, G <: HList, C](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectableUnion: SelectableUnion[G, F]): Eff[selectableUnion.Out, C] = new Eff[selectableUnion.Out, C] {
-    def run[M[_] : Monad](e: selectableUnion.Out)(implicit handlers: Handlers[selectableUnion.Out, M]): M[C] = {
-      implicit val handlersF: Handlers[F, M] = handlers.select(selectableUnion.selectM)
-      implicit val handlersG: Handlers[G, M] = handlers.select(selectableUnion.selectL)
-      val head: M[A] = eff.run(selectableUnion.selectM(e))
-      implicitly[Monad[M]].flatMap(head)(a => gen(a).run(selectableUnion.selectL(e)))
+  case class Impure[F <: HList, A, G <: HList, C, R <: HList](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectF:SelectAll[R, F], selectG: SelectAll[R, G]) extends Eff[R, C] {
+    override def run[M[_] : Monad](e: R)(implicit handlers: Handlers[R, M]): M[C] = {
+      implicit val handlersF: Handlers[F, M] = handlers.select(selectF)
+      implicit val handlersG: Handlers[G, M] = handlers.select(selectG)
+      val head: M[A] = eff.run(selectF(e))
+      implicitly[Monad[M]].flatMap(head)(a => gen(a).run(selectG(e)))
     }
   }
 }
