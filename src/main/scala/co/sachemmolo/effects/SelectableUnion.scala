@@ -32,22 +32,6 @@ trait SelectableUnion[L <: HList, M <: HList] extends DepFn2[L, M] with Serializ
 
     def apply[L <: HList, M <: HList](implicit union: SelectableUnion[L, M]): Aux[L, M, union.Out] = union
 
-    // let M ∪ ∅ = M
-    implicit def hlistUnion2[M <: HList]: Aux[M, HNil, M] =
-      new SelectableUnion[M, HNil] {
-        type Out = M
-
-        def apply(l: M, m: HNil): Out = l
-
-        override def selectL: SelectAll[M, M] = new SelectAll[M, M] {
-          override def apply(t: M): M = t
-        }
-
-        override def selectM: SelectAll[M, HNil] = new SelectAll[M, HNil] {
-          override def apply(t: M): HNil = HNil
-        }
-      }
-
     // let ∅ ∪ M = M
     implicit def hlistUnion[M <: HList]: Aux[HNil, M, M] =
       new SelectableUnion[HNil, M] {

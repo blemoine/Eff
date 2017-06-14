@@ -21,9 +21,9 @@ object Resource {
 }
 
 sealed trait Eff[E <: HList, A] {
-  def map[B](fn: A => B): Eff[E, B] = flatMap(a => Eff.pure(fn(a)))(SelectableUnion.hlistUnion2[E])
+  def map[B](fn: A => B): Eff[E, B] = flatMap(a => Eff.pure(fn(a)))(SelectableUnion.hlistUnion[E])
 
-  def flatMap[H <: HList, B](fn: A => Eff[H, B])(implicit selectableUnion: SelectableUnion[E, H]): Eff[selectableUnion.Out, B] = Eff.impure(fn, this)
+  def flatMap[H <: HList, B](fn: A => Eff[H, B])(implicit selectableUnion: SelectableUnion[H, E]): Eff[selectableUnion.Out, B] = Eff.impure(fn, this)
 
   def run[M[_] : Monad](e: E)(implicit handlers: Handlers[E, M]): M[A]
 
@@ -66,12 +66,12 @@ object Eff {
     }
   }
 
-  private[effects] def impure[F <: HList, A, G <: HList, C](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectableUnion: SelectableUnion[F, G]): Eff[selectableUnion.Out, C] = new Eff[selectableUnion.Out, C] {
+  private[effects] def impure[F <: HList, A, G <: HList, C](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectableUnion: SelectableUnion[G, F]): Eff[selectableUnion.Out, C] = new Eff[selectableUnion.Out, C] {
     def run[M[_] : Monad](e: selectableUnion.Out)(implicit handlers: Handlers[selectableUnion.Out, M]): M[C] = {
-      implicit val handlersF: Handlers[F, M] = handlers.select(selectableUnion.selectL)
-      implicit val handlersG: Handlers[G, M] = handlers.select(selectableUnion.selectM)
-      val head: M[A] = eff.run(selectableUnion.selectL(e))
-      implicitly[Monad[M]].flatMap(head)(a => gen(a).run(selectableUnion.selectM(e)))
+      implicit val handlersF: Handlers[F, M] = handlers.select(selectableUnion.selectM)
+      implicit val handlersG: Handlers[G, M] = handlers.select(selectableUnion.selectL)
+      val head: M[A] = eff.run(selectableUnion.selectM(e))
+      implicitly[Monad[M]].flatMap(head)(a => gen(a).run(selectableUnion.selectL(e)))
     }
   }
 }
