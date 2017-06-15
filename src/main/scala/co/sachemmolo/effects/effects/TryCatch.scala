@@ -8,10 +8,10 @@ import scala.util.Try
 
 object TryCatch {
   implicit object EXCEPTION extends EFFECT {
-    override type R = Nothing
+    override type R = Unit
     override type DefaultMonad[X] = Id[X]
 
-    override def resources: R = throw new Exception("No resource")
+    override def resources: R = ()
   }
 
   type EXCEPTION = EXCEPTION.type
@@ -19,6 +19,10 @@ object TryCatch {
 
   implicit def optionHandler: EffectHandler[EXCEPTION, Option] = new EffectHandler[EXCEPTION, Option] {
     override def pure[A](a: => A): Option[A] = Try(a).toOption
+  }
+
+  implicit def tryHandler: EffectHandler[EXCEPTION, Try] = new EffectHandler[EXCEPTION, Try] {
+    override def pure[A](a: => A): Try[A] = Try(a)
   }
 
 }
