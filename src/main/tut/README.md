@@ -64,7 +64,7 @@ More Advanced example
 
   // sumRnd will use something random (RND) , can throw an exception (EXCEPTION)
   // and will write or read from the console (CONSOLE)
-  val sumRnd: Eff[RND :: CONSOLE :: EXCEPTION :: HNil, Int] = for {
+  val sumRnd: Eff[CONSOLE :: EXCEPTION :: RND :: HNil, Int] = for {
     s1 <- tenOrA
     _ <- withConsole(console => console.println("s1", s1))
     s2 <- tenOrA
@@ -86,7 +86,7 @@ More Advanced example
 ```
 
 Example:
-```tut
+```tut:silent
 sumRnd.run[Option]
 ```
 
@@ -116,7 +116,7 @@ object MockedRnd {
 ```
 
 Example:
-```tut
+```tut:silent
 MockedRnd.x
 ```
 

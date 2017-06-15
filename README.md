@@ -64,7 +64,7 @@ More Advanced example
 
   // sumRnd will use something random (RND) , can throw an exception (EXCEPTION)
   // and will write or read from the console (CONSOLE)
-  val sumRnd: Eff[RND :: CONSOLE :: EXCEPTION :: HNil, Int] = for {
+  val sumRnd: Eff[CONSOLE :: EXCEPTION :: RND :: HNil, Int] = for {
     s1 <- tenOrA
     _ <- withConsole(console => console.println("s1", s1))
     s2 <- tenOrA
@@ -87,10 +87,7 @@ More Advanced example
 
 Example:
 ```scala
-scala> sumRnd.run[Option]
-(s1,A)
-(s2,A)
-res14: Option[Int] = None
+sumRnd.run[Option]
 ```
 
 Specifying explicitly a resource for an effect
@@ -120,8 +117,7 @@ object MockedRnd {
 
 Example:
 ```scala
-scala> MockedRnd.x
-res15: Option[String] = Some(1.0)
+MockedRnd.x
 ```
 
 
