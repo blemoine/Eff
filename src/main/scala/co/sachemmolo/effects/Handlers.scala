@@ -2,6 +2,7 @@ package co.sachemmolo.effects
 
 import cats.arrow.FunctionK
 import cats.{Id, Monad, ~>}
+import co.sachemmolo.effects.Eff.Generator
 import co.sachemmolo.effects.Handlers.HandlersMapEffect
 import shapeless.{::, HList, HMap, HNil}
 import shapeless.ops.hlist.SelectAll

@@ -38,18 +38,21 @@ object Eff {
 
   trait Generator[E <: EFFECT, A] {
 
-    def apply[M[_] : Monad](e: E, handle: EffectHandler[E, M]): M[A]
+    def apply(e: E):E#DefaultMonad[A]
 
-    def map[B](fn: A => B): Generator[E, B] = {
+    def map[B](fn: A => B)(implicit monad:Monad[E#DefaultMonad]): Generator[E, B] = {
       val self = this
       new Generator[E, B] {
-        override def apply[M[_] : Monad](e: E, handle: EffectHandler[E, M]): M[B] = implicitly[Monad[M]].map(self.apply(e, handle))(fn)
+        override def apply(e: E): E#DefaultMonad[B] = {
+          val value: E#DefaultMonad[A] = self.apply(e)
+          monad.map[A,B](value)(fn)
+        }
       }
     }
   }
   object Generator {
     def apply[E <: EFFECT, A](fn: E#R => E#DefaultMonad[A]): Generator[E, A] = new Generator[E, A] {
-      override def apply[M[_] : Monad](e: E, handle: EffectHandler[E, M]): M[A] = handle.pure(fn(e.resources))
+      override def apply(e: E): E#DefaultMonad[A] = fn(e.resources)
     }
   }
 
@@ -64,7 +67,7 @@ object Eff {
   case class NearPure[E <: EFFECT : ClassTag, A](gen: Generator[E, A]) extends Eff[E :: HNil, A] {
     override def run[M[_] : Monad](e: ::[E, HNil])(implicit handlers: Handlers[::[E, HNil], M]): M[A] = {
       val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(implicitly[ClassTag[E]]).map(_.asInstanceOf[EffectHandler[E, M]])
-      gen.apply(e.head, maybeHandler.getOrElse(throw new Exception("Could not happen")))
+      maybeHandler.getOrElse(throw new Exception("Could not happen")).pure(gen.apply(e.head))
     }
   }
   case class Impure[F <: HList, A, G <: HList, C, R <: HList](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectF:SelectAll[R, F], selectG: SelectAll[R, G]) extends Eff[R, C] {
