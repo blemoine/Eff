@@ -33,7 +33,7 @@ object EffectHandler {
 
   def fromMonad[E <: EFFECT : ClassTag, M[_] : Monad](implicit naturalTransfo: E#DefaultMonad ~> M): EffectHandler[E, M] = new EffectHandler[E, M] {
     override def pure[A](a: => E#DefaultMonad[A]): M[A] = {
-      val m = implicitly[Monad[M]]
+      val m = Monad[M]
       m.flatten(m.pure(naturalTransfo(a)))
     }
   }

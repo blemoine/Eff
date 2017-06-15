@@ -71,7 +71,7 @@ object Eff {
 
 
   case class Pure[A](a: () => A) extends Eff[HNil, A] {
-    override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = implicitly[Monad[M]].pure(a())
+    override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = Monad[M].pure(a())
   }
 
   case class NearPure[E <: EFFECT : ClassTag, A](gen: Generator[E, A]) extends Eff[E :: HNil, A] {
@@ -86,7 +86,7 @@ object Eff {
       implicit val handlersF: Handlers[F, M] = handlers.select(selectF)
       implicit val handlersG: Handlers[G, M] = handlers.select(selectG)
       val head: M[A] = eff.run(selectF(e))
-      implicitly[Monad[M]].flatMap(head) { a =>
+      Monad[M].flatMap(head) { a =>
         gen(a).run(selectG(e))
       }
     }
