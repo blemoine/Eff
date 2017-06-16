@@ -37,47 +37,21 @@ sealed trait Eff[E <: HList, A] {
   def runOne[U <: EFFECT, F <: HList, K[_] : Monad](handler: EffectHandler[U, K])(implicit ev: (U :: F) =:= E, u: U, kTransformer: MonadTransformer[K]): Eff[F, K[A]] = {
     RunOne(this.asInstanceOf[Eff[U :: F, A]], u, handler, kTransformer)
   }
-
-  //def runOne[M[_] : Monad, U <: EFFECT : ClassTag, H <: HList](e: U)(implicit ev: (U :: H) =:= E, handler: EffectHandler[U, M]): Eff[H, M[A]]
 }
 
 
 object Eff {
 
-  trait Generator[E <: EFFECT, A] {
-
-    def apply(e: E): E#DefaultMonad[A]
-
-    def map[B](fn: A => B)(implicit monad: Monad[E#DefaultMonad]): Generator[E, B] = {
-      val self = this
-      new Generator[E, B] {
-        override def apply(e: E): E#DefaultMonad[B] = {
-          val value: E#DefaultMonad[A] = self.apply(e)
-          monad.map[A, B](value)(fn)
-        }
-      }
-    }
-  }
-
-  object Generator {
-    def apply[E <: EFFECT, A](fn: E#R => E#DefaultMonad[A]): Generator[E, A] = new Generator[E, A] {
-      override def apply(e: E): E#DefaultMonad[A] = fn(e.resources)
-    }
-  }
-
-  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultMonad[A]): Eff[E :: HNil, A] = NearPure(Generator[E, A](fn))
-
-  def apply[E <: EFFECT : ClassTag, A](gen: Generator[E, A]): Eff[E :: HNil, A] = NearPure(gen)
-
+  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultMonad[A]): Eff[E :: HNil, A] = NearPure((e:E) => fn(e.resources))
 
   case class Pure[A](a: () => A) extends Eff[HNil, A] {
     override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = Monad[M].pure(a())
   }
 
-  case class NearPure[E <: EFFECT : ClassTag, A](gen: Generator[E, A]) extends Eff[E :: HNil, A] {
+  case class NearPure[E <: EFFECT : ClassTag, A](gen: E => E#DefaultMonad[A]) extends Eff[E :: HNil, A] {
     override def run[M[_] : Monad](e: ::[E, HNil])(implicit handlers: Handlers[::[E, HNil], M]): M[A] = {
       val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(implicitly[ClassTag[E]]).map(_.asInstanceOf[EffectHandler[E, M]])
-      maybeHandler.getOrElse(throw new Exception(s"Could not happen, the handler for ${e.head} should exist")).pure(gen.apply(e.head))
+      maybeHandler.getOrElse(throw new Exception(s"Could not happen, the handler for ${e.head} should exist")).pure(gen(e.head))
     }
   }
 

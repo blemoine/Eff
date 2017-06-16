@@ -27,6 +27,7 @@ object EffectHandler {
   implicit def IdToOption: Id ~> Option = new FunctionK[Id, Option] {
     override def apply[A](fa: Id[A]): Option[A] = Some(fa)
   }
+
   implicit def TryToOption: Try ~> Option = new FunctionK[Try, Option] {
     override def apply[A](fa: Try[A]): Option[A] = fa.toOption
   }
@@ -47,7 +48,7 @@ trait Handlers[E <: HList, M[_]] {
     this.asInstanceOf[Handlers[F, M]]
   }
 
-  private[effects] def transform[L[_]](fn:M ~> L): Handlers[E, L]
+  private[effects] def transform[L[_]](fn: M ~> L): Handlers[E, L]
 }
 
 object Handlers {
