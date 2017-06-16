@@ -11,7 +11,7 @@ import scala.util.Random
 object Rnd {
   trait RND extends EFFECT {
     override type R = Double
-    override type DefaultMonad[X] = Id[X]
+    override type DefaultFunctor[X] = Id[X]
   }
 
   implicit object DefaultRnd extends RND {

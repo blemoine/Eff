@@ -13,12 +13,12 @@ import scala.util.Try
 abstract class EffectHandler[E <: EFFECT : ClassTag, M[_]] {
   def effect: ClassTag[E] = implicitly[ClassTag[E]]
 
-  def pure[A](a: => E#DefaultMonad[A]): M[A]
+  def pure[A](a: => E#DefaultFunctor[A]): M[A]
 
   def transform[K[_]](fn: M ~> K): EffectHandler[E, K] = {
     val self = this
     new EffectHandler[E, K] {
-      override def pure[A](a: => E#DefaultMonad[A]): K[A] = fn(self.pure(a))
+      override def pure[A](a: => E#DefaultFunctor[A]): K[A] = fn(self.pure(a))
     }
   }
 }
@@ -32,8 +32,8 @@ object EffectHandler {
     override def apply[A](fa: Try[A]): Option[A] = fa.toOption
   }
 
-  def fromMonad[E <: EFFECT : ClassTag, M[_] : Monad](implicit naturalTransfo: E#DefaultMonad ~> M): EffectHandler[E, M] = new EffectHandler[E, M] {
-    override def pure[A](a: => E#DefaultMonad[A]): M[A] = {
+  def fromMonad[E <: EFFECT : ClassTag, M[_] : Monad](implicit naturalTransfo: E#DefaultFunctor ~> M): EffectHandler[E, M] = new EffectHandler[E, M] {
+    override def pure[A](a: => E#DefaultFunctor[A]): M[A] = {
       val m = Monad[M]
       m.flatten(m.pure(naturalTransfo(a)))
     }

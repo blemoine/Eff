@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 trait EFFECT {
   type R
 
-  type DefaultMonad[_]
+  type DefaultFunctor[_]
 
   def resources: R
 }
@@ -42,13 +42,13 @@ sealed trait Eff[E <: HList, A] {
 
 object Eff {
 
-  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultMonad[A]): Eff[E :: HNil, A] = NearPure((e:E) => fn(e.resources))
+  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultFunctor[A]): Eff[E :: HNil, A] = NearPure((e:E) => fn(e.resources))
 
   case class Pure[A](a: () => A) extends Eff[HNil, A] {
     override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = Monad[M].pure(a())
   }
 
-  case class NearPure[E <: EFFECT : ClassTag, A](gen: E => E#DefaultMonad[A]) extends Eff[E :: HNil, A] {
+  case class NearPure[E <: EFFECT : ClassTag, A](gen: E => E#DefaultFunctor[A]) extends Eff[E :: HNil, A] {
     override def run[M[_] : Monad](e: ::[E, HNil])(implicit handlers: Handlers[::[E, HNil], M]): M[A] = {
       val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(implicitly[ClassTag[E]]).map(_.asInstanceOf[EffectHandler[E, M]])
       maybeHandler.getOrElse(throw new Exception(s"Could not happen, the handler for ${e.head} should exist")).pure(gen(e.head))

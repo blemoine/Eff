@@ -10,7 +10,7 @@ import scala.annotation.implicitNotFound
 object Console {
   trait CONSOLE extends EFFECT {
     override type R = scala.Console.type
-    override type DefaultMonad[X] = Id[X]
+    override type DefaultFunctor[X] = Id[X]
   }
   implicit object DefaultConsole extends CONSOLE {
     def resources = scala.Console

@@ -9,7 +9,7 @@ import scala.util.Try
 object TryCatch {
   implicit object EXCEPTION extends EFFECT {
     override type R = Unit
-    override type DefaultMonad[X] = Id[X]
+    override type DefaultFunctor[X] = Id[X]
 
     override def resources: R = ()
   }
