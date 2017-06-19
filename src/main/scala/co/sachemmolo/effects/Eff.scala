@@ -1,7 +1,7 @@
 package co.sachemmolo.effects
 
 import cats.Monad
-import co.sachemmolo.effects.Eff.RunOne
+import co.sachemmolo.effects.Eff.{Pure, RunOne}
 import shapeless.ops.hlist.SelectAll
 import shapeless.{::, HList, HNil}
 
@@ -42,7 +42,7 @@ sealed trait Eff[E <: HList, A] {
 
 object Eff {
 
-  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultFunctor[A]): Eff[E :: HNil, A] = NearPure((e:E) => fn(e.resources))
+  def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultFunctor[A]): Eff[E :: HNil, A] = NearPure((e: E) => fn(e.resources))
 
   case class Pure[A](a: () => A) extends Eff[HNil, A] {
     override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = Monad[M].pure(a())
@@ -77,5 +77,4 @@ object Eff {
       eff.run[L](u :: e)
     }
   }
-
 }
