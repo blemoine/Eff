@@ -46,6 +46,7 @@ val tenOrA: Eff[RND :: HNil, String] = rnd { i =>
 More Advanced example
 ---------------------
 
+
 ```tut:silent
   import shapeless._
   import cats.implicits._
@@ -137,7 +138,7 @@ object Async {
   trait ASYNC extends EFFECT {
     override type R = ExecutionContext
     // Async code is by default writtent in a Future
-    override type DefaultMonad[X] = Future[X] 
+    override type DefaultFunctor[X] = Future[X] 
   }
   //By default, the resource for ASYNC is the global ExecutionContext
   implicit object DefaultAsync extends ASYNC {

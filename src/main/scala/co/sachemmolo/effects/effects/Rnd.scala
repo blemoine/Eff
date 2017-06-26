@@ -22,5 +22,5 @@ object Rnd {
 
   import EffectHandler.IdToOption
   @implicitNotFound("Could not find default effect for RND")
-  implicit def optionHandler(implicit e:RND): EffectHandler[RND, Option] = EffectHandler.fromMonad[RND, Option]
+  implicit def rndHandler(implicit e:RND): EffectHandler[RND, Option] = EffectHandler.fromMonad[RND, Option]
 }

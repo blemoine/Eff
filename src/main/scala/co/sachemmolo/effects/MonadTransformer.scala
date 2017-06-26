@@ -1,6 +1,7 @@
 package co.sachemmolo.effects
 
 import cats.arrow.FunctionK
+import cats.data.OptionT
 import cats.{Monad, ~>}
 
 abstract class MonadTransformer[K[_] : Monad] {
@@ -36,6 +37,16 @@ abstract class MonadTransformer[K[_] : Monad] {
         self.tailRecM[M, A, B](a)(f)
       }
     }
+  }
+}
+
+object TransformerInstance {
+
+  import cats.implicits._
+  implicit object OptionTransformer extends MonadTransformer[Option] {
+    override def flatMap[M[_] : Monad, A, B](fa: M[Option[A]])(f: (A) => M[Option[B]]): M[Option[B]] = OptionT(fa).flatMap(a => OptionT(f(a))).value
+
+    override def tailRecM[M[_] : Monad, A, B](a: A)(f: (A) => M[Option[Either[A, B]]]): M[Option[B]] = OptionT.catsDataMonadForOptionT[M].tailRecM(a)((a: A) => OptionT(f(a))).value
   }
 
 }
