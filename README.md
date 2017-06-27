@@ -53,7 +53,7 @@ More Advanced example
   import co.sachemmolo.effects.Eff
 
   import co.sachemmolo.effects.effects.Rnd.{RND, rnd}
-  import co.sachemmolo.effects.effects.Console._
+  import co.sachemmolo.effects.effects.Output._
   import co.sachemmolo.effects.effects.TryCatch
   import co.sachemmolo.effects.effects.TryCatch._
 
@@ -64,14 +64,14 @@ More Advanced example
   }
 
   // sumRnd will use something random (RND) , can throw an exception (EXCEPTION)
-  // and will write or read from the console (CONSOLE)
-  val sumRnd: Eff[CONSOLE :: EXCEPTION :: RND :: HNil, Int] = for {
+  // and will write to an output (OUTPUT)
+  val sumRnd: Eff[OUTPUT :: EXCEPTION :: RND :: HNil, Int] = for {
     s1 <- tenOrA
-    _ <- withConsole(console => console.println("s1", s1))
+    _ <- printlnEff("s1 " + s1)
     s2 <- tenOrA
-    _ <- withConsole(console => console.println("s2", s2))
+    _ <- printlnEff("s2 " + s2)
     result <- parse(s1 + s2)
-    _ <- withConsole(console => console.println("result", result))
+    _ <- printlnEff("result " + result)
   } yield result
 
   //For the moment nothing is printed in the console.
