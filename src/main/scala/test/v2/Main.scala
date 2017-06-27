@@ -11,10 +11,8 @@ import shapeless._
 object Main {
   def main(args: Array[String]): Unit = {
 
-    def toGuess: Eff[RND :: HNil, Int] = rnd(d => Math.floor(d * 10).toInt)
-
     val eff: Eff[CONSOLE :: EXCEPTION :: RND :: HNil, Unit] = for {
-      nbToGuess <- toGuess
+      nbToGuess <-  rnd(d => Math.floor(d * 10).toInt)
       r <- guess(nbToGuess)
     } yield r
 
@@ -24,16 +22,16 @@ object Main {
 
   def guess(toGuess: Int): Eff[CONSOLE :: EXCEPTION :: HNil, Unit] = {
     for {
-      _ <- withConsole(c => c.out.println("guess a number?"))
-      nbStr <-  withConsole(c => c.in.readLine())
+      _ <- withConsole(_.out.println("guess a number?"))
+      nbStr <-  withConsole(_.in.readLine())
       guessed <- TryCatch(nbStr.toInt)
       r <- if (guessed == toGuess) {
-        TryCatch(()).flatMap(_ => withConsole(c => c.out.println(s"You correctly guessed $toGuess")))
+        TryCatch(()).flatMap(_ => withConsole(_.out.println(s"You correctly guessed $toGuess")))
       } else {
         (if(guessed > toGuess) {
-          withConsole(c => c.out.println(s"The number to guess is lesser than $guessed"))
+          withConsole(_.out.println(s"The number to guess is lesser than $guessed"))
         } else {
-          withConsole(c => c.out.println(s"The number to guess is greater than $guessed"))
+          withConsole(_.out.println(s"The number to guess is greater than $guessed"))
         }).flatMap(_ => guess(toGuess))
       }
     } yield r
