@@ -19,8 +19,9 @@ object Rnd {
   }
 
   def rnd[A](fn: Double => A): Eff[RND :: HNil, A] = Eff[RND, A](fn)
+  def rndInt(min:Int, max:Int): Eff[RND :: HNil, Int]= Eff[RND, Int](d => (d * (max - min) + min).toInt)
 
   import EffectHandler.IdToOption
   @implicitNotFound("Could not find default effect for RND")
-  implicit def rndHandler(implicit e:RND): EffectHandler[RND, Option] = EffectHandler.fromMonad[RND, Option]
+  implicit def rndHandler: EffectHandler[RND, Option] = EffectHandler.fromMonad[RND, Option]
 }

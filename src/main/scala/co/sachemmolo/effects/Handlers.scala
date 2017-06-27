@@ -24,6 +24,10 @@ abstract class EffectHandler[E <: EFFECT : ClassTag, M[_]] {
 }
 
 object EffectHandler {
+  implicit def defaultHandler[E <: EFFECT : ClassTag]: EffectHandler[E, E#DefaultFunctor] = new EffectHandler[E, E#DefaultFunctor] {
+    override def pure[A](a: => E#DefaultFunctor[A]): E#DefaultFunctor[A] = a
+  }
+
   implicit def IdToOption: Id ~> Option = new FunctionK[Id, Option] {
     override def apply[A](fa: Id[A]): Option[A] = Some(fa)
   }

@@ -18,6 +18,7 @@ class StateSpec extends WordSpec with  Matchers {
       type StateInt[Z] = State[Int, Z]
 
       import ST._
+      implicit val stateIntHandler = EffectHandler.defaultHandler[STATE[Int]]
       x.run[StateInt].run(5).value._2 shouldBe 8
     }
   }
@@ -33,12 +34,7 @@ class StateSpec extends WordSpec with  Matchers {
 
     implicit def DefaultState[S]:STATE[S] = new STATE[S] {}
 
-
     def get[S]: Eff[STATE[S] :: HNil, S] = Eff[STATE[S], S]( (_) => State.get[S])
     def put[S](s:S): Eff[STATE[S] :: HNil, Unit] = Eff[STATE[S], Unit]((_) => State.set(s))
-
-    implicit def defaultHandler[S]: EffectHandler[STATE[S], ({type V[X] = State[S, X]})#V] = new EffectHandler[STATE[S], ({type V[X] = State[S, X]})#V] {
-      override def pure[A](a: => STATE[S]#DefaultFunctor[A]): State[S, A] = a
-    }
   }
 }

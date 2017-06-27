@@ -13,7 +13,7 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     val eff: Eff[INPUT :: EXCEPTION :: OUTPUT :: RND :: HNil, Unit] = for {
-      nbToGuess <- rnd(d => Math.floor(d * 10).toInt)
+      nbToGuess <- rndInt(0, 10)
       r <- guess(nbToGuess)
     } yield r
 

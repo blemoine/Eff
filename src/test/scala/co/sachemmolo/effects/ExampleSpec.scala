@@ -48,7 +48,7 @@ class ExampleSpec extends WordSpec with Matchers {
       } yield y
 
       val recoveredEx2 = for {
-        x <- ex2.runOne(TryCatch.tryHandler)
+        x <- ex2.runOne(EffectHandler.defaultHandler[EXCEPTION])
         u <- TryCatch.apply(x.recover {
           case TooBigException(v) if v < 7 => v
         }.get)
