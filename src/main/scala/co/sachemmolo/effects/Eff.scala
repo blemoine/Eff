@@ -44,6 +44,8 @@ object Eff {
 
   def apply[E <: EFFECT : ClassTag, A](fn: E#R => E#DefaultFunctor[A]): Eff[E :: HNil, A] = NearPure((e: E) => fn(e.resources))
 
+  def pure[H <: HList, A](a: A): Eff[H, A] = FakeImpure(() => a)
+
   case class Pure[A](a: () => A) extends Eff[HNil, A] {
     override def run[M[_] : Monad](e: HNil)(implicit handlers: Handlers[HNil, M]): M[A] = Monad[M].pure(a())
   }
@@ -53,6 +55,10 @@ object Eff {
       val maybeHandler: Option[EffectHandler[E, M]] = handlers.handlersMap.get(implicitly[ClassTag[E]]).map(_.asInstanceOf[EffectHandler[E, M]])
       maybeHandler.getOrElse(throw new Exception(s"Could not happen, the handler for ${e.head} should exist")).pure(gen(e.head))
     }
+  }
+
+  case class FakeImpure[H <: HList, A](a: () => A) extends Eff[H, A] {
+    override def run[M[_] : Monad](e: H)(implicit handlers: Handlers[H, M]): M[A] = implicitly[Monad[M]].pure(a())
   }
 
   case class Impure[F <: HList, A, G <: HList, C, R <: HList](gen: A => Eff[G, C], eff: Eff[F, A])(implicit selectF: SelectAll[R, F], selectG: SelectAll[R, G]) extends Eff[R, C] {

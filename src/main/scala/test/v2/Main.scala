@@ -12,7 +12,7 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     val eff: Eff[CONSOLE :: EXCEPTION :: RND :: HNil, Unit] = for {
-      nbToGuess <-  rnd(d => Math.floor(d * 10).toInt)
+      nbToGuess <- rnd(d => Math.floor(d * 10).toInt)
       r <- guess(nbToGuess)
     } yield r
 
@@ -23,12 +23,13 @@ object Main {
   def guess(toGuess: Int): Eff[CONSOLE :: EXCEPTION :: HNil, Unit] = {
     for {
       _ <- withConsole(_.out.println("guess a number?"))
-      nbStr <-  withConsole(_.in.readLine())
+      nbStr <- withConsole(_.in.readLine())
       guessed <- TryCatch(nbStr.toInt)
       r <- if (guessed == toGuess) {
-        TryCatch(()).flatMap(_ => withConsole(_.out.println(s"You correctly guessed $toGuess")))
+        withConsole(_.out.println(s"You correctly guessed $toGuess"))
+          .flatMap(_ => Eff.pure[CONSOLE :: EXCEPTION :: HNil, Unit](()))
       } else {
-        (if(guessed > toGuess) {
+        (if (guessed > toGuess) {
           withConsole(_.out.println(s"The number to guess is lesser than $guessed"))
         } else {
           withConsole(_.out.println(s"The number to guess is greater than $guessed"))
