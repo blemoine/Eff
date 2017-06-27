@@ -12,14 +12,15 @@ import shapeless._
 object Main {
   def main(args: Array[String]): Unit = {
 
-    val eff: Eff[INPUT :: EXCEPTION :: OUTPUT :: RND :: HNil, Unit] = for {
-      nbToGuess <- rndInt(0, 10)
-      r <- guess(nbToGuess)
-    } yield r
+    val eff: Eff[INPUT :: EXCEPTION :: OUTPUT :: RND :: HNil, Unit] = guessGame()
 
     eff.run[Option]
   }
 
+  def guessGame():Eff[INPUT :: EXCEPTION :: OUTPUT :: RND :: HNil, Unit] = for {
+    nbToGuess <- rndInt(0, 10)
+    r <- guess(nbToGuess)
+  } yield r
 
   def guess(toGuess: Int): Eff[INPUT :: EXCEPTION :: OUTPUT :: HNil, Unit] = {
     for {
